@@ -1,0 +1,19 @@
+.data
+	Z: .word 0 #intZ=0;
+	
+	.text
+	main:
+	  addi x1,x0,15 #intA=15
+	  addi x2,x0,10 #intB=10;
+	  addi x3,x0,5 #intC=5;
+	  addi x4,x0,2 #intD=2;
+	  addi x5,x0,18 #intE=18
+	  addi x6,x0,-3 #intF=-3
+	  sub x2,x1,x2 #B=A-B;
+	  mul x4,x3,x4 #D=C*D;
+	  sub x6,x5,x6 #F=E-F;
+	  div x1,x1,x3 #A=A/c;
+	  add x3,x2,x4 #(A-B)+(CD)
+	  add x3,x3,x6 #(A-B)+(CD)+(E-F)
+	  sub x3,x3,x1 #(A-B)+(C*D)+(E-F)+(A/C)
+	  sw x3,Z,x1

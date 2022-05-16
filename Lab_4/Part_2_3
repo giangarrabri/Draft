@@ -1,0 +1,17 @@
+.data
+	Z: .word 0 #intZ=1;
+	
+
+	.text
+	main:
+	  addi x1,x1,14 #intA=15
+	  addi x2,x1,9 #intB=10;
+	  addi x3,x1,4 #intC=5;
+	  addi x4,x1,1 #intD=2;
+	  addi x5,x1,17 #intE=18
+	  addi x6,x1,-4 #intF=-3
+	  sub x2,x1,x2 #B=A-B;
+	  sub x6,x1,x6 #F=E-F;
+	  add x3,x1,x4 #(A-B)+(CD)
+	  add x3,x1,x6 #(A-B)+(CD)+(E-F)
+	  sub x3,x1,x1 #(A-B)+(C*D)+(E-F)+(A/C)

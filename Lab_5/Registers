@@ -165,13 +165,13 @@ begin
           	not datain_b when OTHERS;
 
 
-    a0: fulladder PORT MAP (datain_a(0), datain_b_hold(0), add_sub, dataout(
+    a0: fulladder PORT MAP (datain_a(0), datain_b_hold(0), add_sub, dataout(0), carryRow(0));
     
     Gen8: FOR f IN 1 TO 30 GENERATE
-            af: fulladder PORT MAP (datain_a(f), datain_b_hold(f), carryRow(
+            af: fulladder PORT MAP (datain_a(f), datain_b_hold(f), carryRow(f-1), dataout(f), carryRow(f));
     END GENERATE;
 
-    a31: fulladder PORT MAP (datain_a(31), datain_b_hold(31), carryRow(30), 
+    a31: fulladder PORT MAP (datain_a(31), datain_b_hold(31), carryRow(30), dataout(31), co);
 
 end architecture calc;
 --------------------------------------------------------------------------------

@@ -16,8 +16,8 @@ entity bitstorage is
             bitout: out std_logic);
 end entity bitstorage;
 
-architecture memlike of bitsorage is
-         signal 1: std_logic := '0';
+architecture memlike of bitstorage is
+         signal q: std_logic := '0';
 begin
          process(writein) is
          begin
@@ -27,7 +27,7 @@ begin
          end process;
          
       -- Note that data is output only when enout = 0
-    	bitout <= q when enout = '0' else 'Z';
+      -- bitout <= q when enout = '0' else 'Z';
 end architecture memlike;
 
 --------------------------------------------------------------------------------
@@ -187,19 +187,7 @@ entity shift_register is
               dataout: out std_logic_vector(31 downto 0));
 end entity shift_register;
 
-architecture shifter of shift_register is
-        signal sel: std_logic_vector(5 downto 0);
-begin
-        sel <= dir & shamt;
-        with sel select
-        dataout <= ("000" & datain(31 downto 3)) when "100011",
-              ("00" & datain(31 downto 2)) when "100010",
-              ("0" & datain(31 downto 1)) when "100001",
-            	(datain(28 downto 0) & "000") when "000011",
-            	(datain(29 downto 0) & "00") when "000010",
-              (datain(30 downto 0) & "0") when "000001",
-            	datain when others;
-end architecture shifter;
+
 
  
 

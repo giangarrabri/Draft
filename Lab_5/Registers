@@ -124,10 +124,10 @@ begin
                     "0011" when "010", 
                     "0001" when "001",
                     "0000" when OTHERS;
-    byte4: register8 PORT MAP (datain(31 downto 24), enableout(3), enablewri
-    byte3: register8 PORT MAP (datain(23 downto 16), enableout(2), enablewri 
-    byte2: register8 PORT MAP (datain(15 downto 8), enableout(1), enablewrit 
-    byte1: register8 PORT MAP (datain(7 downto 0), enableout(0), enablewrite
+    byte4: register8 PORT MAP (datain(31 downto 24), enableout(3), enablewrite(3), dataout(31 downto 24));
+    byte3: register8 PORT MAP (datain(23 downto 16), enableout(2), enablewrite(2), dataout(23 downto 16));
+    byte2: register8 PORT MAP (datain(15 downto 8), enableout(1), enablewrite(1), dataout(15 downto 8));
+    byte1: register8 PORT MAP (datain(7 downto 0), enableout(0), enablewrite(0), dataout(7 downto 9));
     
 end architecture biggermem;
 

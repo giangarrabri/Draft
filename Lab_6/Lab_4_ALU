@@ -1,1 +1,80 @@
+---------------------------------------------------------------------------------------------
+-- Brittany Giangarra
+-- LAB #4
+--
+----------------------------------------------------------------------------------------------
+Library ieee;
+Use ieee.std_logic_1164.all;
+Use ieee.numeric_std.all;
+Use ieee.std_logic_unsigned.all;
 
+entity ALU is
+	Port(   DataIn1: in std_logic_vector(31 downto 0);
+		DataIn2: in std_logic_vector(31 downto 0);
+		ALUCtrl: in std_logic_vector(4 downto 0);
+		Zero: out std_logic;
+		ALUResult: out std_logic_vector(31 downto 0) );
+end entity ALU;
+
+architecture ALU_Arch of ALU is
+	-- ALU components
+	component adder_subtracter
+		port(   datain_a: in std_logic_vector(31 downto 0);
+			datain_b: in std_logic_vector(31 downto 0);
+			add_sub: in std_logic;
+			dataout: std_logic_vector(31 downto 0);
+			co: out std_logic);
+	end component adder_subtracter;
+
+	component shift_register
+		port(   datain: in std_logic_vector(31 downto 0);
+			dir: in std_logic;
+			shamt: in std_logic_vector(4 downto 0);
+			dataout: out std_logic_vector(31 downto 0));
+	end component shift_register;
+	SIGNAL whatIsThisFor : std_logic;
+	SIGNAL ADDERRESULT : std_logic_vector(31 downto 0);
+	SIGNAL SHIFTRESULT : std_logic_vector(31 downto 0); 
+
+	SIGNAL TEMPRES: std_logic_vector(31 downto 0);
+
+	SIGNAL BITHOLDER : std_logic;
+
+begin
+
+	with ALUCtrl SELECT
+	BITHOLDER <= '0' when "00000", --ADD
+		'1' when "00001", --SUB
+		'0' when "00010", --ADDI
+		'0' when "00011", --AND
+		'0' when "00100", --ANDI
+		'0' when "00101", --OR
+		'0' when "00110", --ORI
+		'0' when "00111",
+		'0' when "01000",
+		'1' when "01001",
+		'1' when OTHERS;
+
+	-- Add, Sub, Addi
+	A0:adder_subtracter PORT MAP (DataIn1, DataIn2, BITHOLDER, ADDERRESULT, whatIsThisFor);
+	-- SLL, SLLI, SRL, SRLI
+	A3:shift_register PORT MAP(DataIn1, BITHOLDER, DataIn2(4 downto 0), SHIFTRESULT);
+
+	WITH ALUCtrl SELECT
+	TEMPRES <= ADDERRESULT when "00000", --ADD
+		ADDERRESULT when "00001", --SUB
+		ADDERRESULT when "00010", --ADDI
+		(DataIn1 AND DataIn2) when "00011", --AND
+		(DataIn1 AND DataIn2) when "00100", --ANDI
+		(DataIn1 OR DataIn2) when "00101", --OR
+		(DataIn1 OR DataIn2) when "00110", --ORI
+		SHIFTRESULT when "00111", --SLL
+		SHIFTRESULT when "01000", --SLLI
+		SHIFTRESULT when "01001", --SRL
+		SHIFTRESULT when OTHERS; --SRLI
+
+	Zero <= '1' when TEMPRES = X"00000000" ELSE '0';
+
+	ALUResult <= TEMPRES;
+
+end architecture ALU_Arch;

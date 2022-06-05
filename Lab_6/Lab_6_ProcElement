@@ -1,1 +1,440 @@
+--------------------------------------------------------------------------------
+--
+-- LAB #6 - Processor Elements
+--
+--------------------------------------------------------------------------------
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.STD_LOGIC_ARITH.ALL;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
+entity BusMux2to1 is
+	Port(	selector: in std_logic;
+			In0, In1: in std_logic_vector(31 downto 0);
+			Result: out std_logic_vector(31 downto 0) );
+end entity BusMux2to1;
+
+architecture selection of BusMux2to1 is
+begin
+-- Add your code here
+
+architecture memlike of bitstorage is
+	signal q: std_logic := '0'
+
+	process(writein) is
+	begin	
+	   if (rising_edge(writein)) then
+		q <= bitin;
+	   end if;
+	end process;
+
+	--Note that data is output only when enout = 0
+	--bitout <= q when enout = '0' else 'Z';
+end architecture memlike;
+
+------------------------------------------------------------------------------------------------
+Library ieee;
+Use ieee.std_logic_1164.all;
+Use ieee.numeric_std.all;
+Use ieee.std_logic_unsigned.all;
+
+entity fulladder is
+	port (a : in std_logic;
+	b : in std_logic;
+	cin : in std_logic;
+	sum : out std_logic;
+	carry : out std_logic
+	);
+end fulladder;
+
+architecture addlike of fulladder is
+begin
+	sum <= a xor b xor cin;
+	carry <= (a and b) or (a and cin) or (b and cin);
+end architecture addlike;
+
+
+-------------------------------------------------------------------------------------------
+Library ieee;
+Use ieee.std_logic_1164.all;
+Use ieee.numeric_std.all;
+Use ieee.std_logic_unsigned.all;
+
+entity register8 is
+	port(datain: in std_logic_vector(7 downto 0);
+		enout: in std_logic;
+		writein: in std_logic;
+		dataout: out std_logic_vector(7 downto 0));
+end entity register8;
+
+architecture memmy of register8 is
+
+	component bitstorage
+	port(bitin: in std_logic;
+		enout: in std_logic;
+		writein: in std_logic;
+		bitout: out std_logic);
+	end component;
+
+begin
+
+	Gen8: FOR j IN 0 to 7 GENERATE
+		aj: bitstorage PORT MAP (datain(j), enout, writein, dataout(j));
+END GENERATE;
+
+end architecture memmy;
+
+---------------------------------------------------------------------------------------------
+Library ieee;
+Use ieee.std_logic_1164.all;
+Use ieee.numeric_std.all;
+Use ieee.std_logic_unsigned.all;
+
+entity register32 is
+	port(datain: in std_logic_vector(31 downto 0);
+	enout32, enout16, enout8: in std_logic;
+	writein32, writein16, writein8: in std_logic;
+	dataout: out std_logic_vector(31 downto 0));
+end entity register32;
+
+architecture biggermem of register32 is
+
+
+	component register8
+		port(datain: in std_logic_vector(7 downto 0);
+			enout: in std_logic;
+			writein: in std_logic;
+			dataout: out std_logic_vector(7 downto 0));
+	end component;
+	signal megaenout : std_logic_vector (2 downto 0);
+	signal megawritein : std_logic_vector(2 downto 0);
+	signal enableout : std_logic_vector(3 downto 0);
+		signal enablewrite : std_logic_vector(3 downto 0);
+begin
+		megaenout <= enout32 & enout16 & enout8;
+		megawritein <= writein32 & writein16 & writein8;
+
+		with megaenout select
+			enableout <= "0000" when "011",
+				"1100" when "101",
+				"1110" when "110",
+				"1111" when OTHERS;
+
+		with megawritein select
+			enablewrite <= "1111" when "100",
+				"0011" when "010",
+				"0001" when "001",
+				"0000" when OTHERS;
+	byte4: register8 PORT MAP (datain(31 downto 24), enableout(3), enablewrite(3), dataout(31 downto 24));
+	byte3: register8 PORT MAP (datain(23 downto 16), enableout(2), enablewrite(2), dataout(23 downto 16));
+	byte2: register8 PORT MAP (datain(15 downto 8), enableout(1), enablewrite(1), dataout(15 downto 8));
+	byte1: register8 PORT MAP (datain(7 downto 0), enableout(0), enablewrite(0), dataout(7 downto 0));
+
+end architecture biggermem;
+
+-----------------------------------------------------------------------------------------------------
+Library ieee;
+Use ieee.std_logic_1164.all;
+Use ieee.numeric_std.all;
+Use ieee.std_logic_unsigned.all;
+
+entity adder_subtracter is
+	port(   datain_a: in std_logic_vector(31 downto 0);
+		datain_b: in std_logic_vector(31 downto 0);
+		add_sub: in std_logic;
+		dataout: out std_logic_vector(31 downto 0);
+		co: out std_logic);
+end entity adder_subtracter;
+
+architecture calc of adder_subtracter is
+
+component fulladder
+	port (a : in std_logic;
+		b : in std_logic;
+		cin : in std_logic;
+		sum : out std_logic;
+		carry : out std_logic
+	);
+end component;
+
+	signal carryRow : std_logic_vector(31 downto 0);
+	signal datain_b_hold : std_logic_vector(31 downto 0);
+
+begin
+	with add_sub select
+		datain_b_hold <= datain_b when '0',
+		not datain_b when OTHERS;
+
+
+	a0: fulladder PORT MAP (datain_a(0), datain_b_hold(0), add_sub, dataout(0), carryRow(0));
+
+	Gen8: FOR f IN 1 TO 30 GENERATE
+		af: fulladder PORT MAP (datain_a(f), datain_b_hold(f), carryRow(f-1), dataout(f), carryRow(f));
+	END GENERATE;
+
+	a31: fulladder PORT MAP (datain_a(31), datain_b_hold(31), carryRow(30), dataout(31), co);
+
+end architecture calc;
+-------------------------------------------------------------------------------------------------
+Library ieee;
+Use ieee.std_logic_1164.all;
+Use ieee.numeric_std.all;
+Use ieee.std_logic_unsigned.all;
+
+entity shift_register is
+	port(   datain: in std_logic_vector(31 downto 0);
+		dir: in std_logic;
+		shamt: in std_logic_vector(4 downto 0);
+		dataout: out std_logic_vector(31 downto 0));
+end entity shift_register;
+
+end architecture selection;
+
+--------------------------------------------------------------------------------
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.STD_LOGIC_ARITH.ALL;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
+
+entity Control is
+      Port(clk : in  STD_LOGIC;
+           opcode : in  STD_LOGIC_VECTOR (6 downto 0);
+           funct3  : in  STD_LOGIC_VECTOR (2 downto 0);
+           funct7  : in  STD_LOGIC_VECTOR (6 downto 0);
+           Branch : out  STD_LOGIC_VECTOR(1 downto 0);
+           MemRead : out  STD_LOGIC;
+           MemtoReg : out  STD_LOGIC;
+           ALUCtrl : out  STD_LOGIC_VECTOR(4 downto 0);
+           MemWrite : out  STD_LOGIC;
+           ALUSrc : out  STD_LOGIC;
+           RegWrite : out  STD_LOGIC;
+           ImmGen : out STD_LOGIC_VECTOR(1 downto 0));
+end Control;
+
+architecture Boss of Control is
+begin
+-- Add your code here
+entity ALU is
+	Port(   DataIn1: in std_logic_vector(31 downto 0);
+		DataIn2: in std_logic_vector(31 downto 0);
+		ALUCtrl: in std_logic_vector(4 downto 0);
+		Zero: out std_logic;
+		ALUResult: out std_logic_vector(31 downto 0) );
+end entity ALU;
+
+architecture ALU_Arch of ALU is
+	-- ALU components
+	component adder_subtracter
+		port(   datain_a: in std_logic_vector(31 downto 0);
+			datain_b: in std_logic_vector(31 downto 0);
+			add_sub: in std_logic;
+			dataout: std_logic_vector(31 downto 0);
+			co: out std_logic);
+	end component adder_subtracter;
+
+	component shift_register
+		port(   datain: in std_logic_vector(31 downto 0);
+			dir: in std_logic;
+			shamt: in std_logic_vector(4 downto 0);
+			dataout: out std_logic_vector(31 downto 0));
+	end component shift_register;
+	SIGNAL whatIsThisFor : std_logic;
+	SIGNAL ADDERRESULT : std_logic_vector(31 downto 0);
+	SIGNAL SHIFTRESULT : std_logic_vector(31 downto 0); 
+
+	SIGNAL TEMPRES: std_logic_vector(31 downto 0);
+
+	SIGNAL BITHOLDER : std_logic;
+
+begin
+
+	with ALUCtrl SELECT
+	BITHOLDER <= '0' when "00000", --ADD
+		'1' when "00001", --SUB
+		'0' when "00010", --ADDI
+		'0' when "00011", --AND
+		'0' when "00100", --ANDI
+		'0' when "00101", --OR
+		'0' when "00110", --ORI
+		'0' when "00111",
+		'0' when "01000",
+		'1' when "01001",
+		'1' when OTHERS;
+
+	-- Add, Sub, Addi
+	A0:adder_subtracter PORT MAP (DataIn1, DataIn2, BITHOLDER, ADDERRESULT, whatIsThisFor);
+	-- SLL, SLLI, SRL, SRLI
+	A3:shift_register PORT MAP(DataIn1, BITHOLDER, DataIn2(4 downto 0), SHIFTRESULT);
+
+	WITH ALUCtrl SELECT
+	TEMPRES <= ADDERRESULT when "00000", --ADD
+		ADDERRESULT when "00001", --SUB
+		ADDERRESULT when "00010", --ADDI
+		(DataIn1 AND DataIn2) when "00011", --AND
+		(DataIn1 AND DataIn2) when "00100", --ANDI
+		(DataIn1 OR DataIn2) when "00101", --OR
+		(DataIn1 OR DataIn2) when "00110", --ORI
+		SHIFTRESULT when "00111", --SLL
+		SHIFTRESULT when "01000", --SLLI
+		SHIFTRESULT when "01001", --SRL
+		SHIFTRESULT when OTHERS; --SRLI
+
+	Zero <= '1' when TEMPRES = X"00000000" ELSE '0';
+
+	ALUResult <= TEMPRES;
+
+end architecture ALU_Arch;
+
+
+
+end Boss;
+
+--------------------------------------------------------------------------------
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.STD_LOGIC_ARITH.ALL;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
+
+entity ProgramCounter is
+    Port(Reset: in std_logic;
+	 Clock: in std_logic;
+	 PCin: in std_logic_vector(31 downto 0);
+	 PCout: out std_logic_vector(31 downto 0));
+end entity ProgramCounter;
+
+architecture executive of ProgramCounter is
+begin
+-- Add your code here
+entity RAM is
+     Port(Reset:     in std_logic;
+	  Clock:     in std_logic;
+	  OE:	     in std_logic;
+	  WE:	     in std_logic;
+	  Address:   in std_logic_vector(29 downto 0);
+	  DataIn:    in std_logic_vector(31 downto 0);
+	  DataOut:   out std_logic_vector(31 downto 0));
+end entity RAM;
+
+architecture staticRAM of RAM is
+
+     type ram_type is array (0 to 127) of std_logic_vector(31 downto 0);
+     signal i_ram : ram_type;
+
+begin
+
+     RamProc: process(Clock, Reset, OE, WE, Address) is
+
+begin
+     if Reset = '1' then
+	for i in 0 to 127 loop
+	    i_ram(i) <= x"00000000";
+	end loop;
+     end if;
+
+    	--Storing at Address
+	 if falling_edge(Clock) AND WE = '1' AND (to_integer(unsigned(Address(7 downto 0))) then
+		i_ram(to_integer(unsigned(Address)(7 downto 0)))) <= DataIn)
+	end if;
+
+	-- Reading from Address
+	if (OE = '0') AND (to_integer(unsigned(Address)) < 127) AND (to_integer(unsigned(Address)) >=0) then
+	   DataOut <= i_ram(to_integer(unsigned(Address(7 downto 0))));
+	else
+	   DataOut <= (others => 'Z');
+	end if;
+
+	
+
+
+     end process;
+
+end staticRAM;
+
+
+--------------------------------------------------------------------------------------------
+LIBRARY ieee;
+Use ieee.std_logic_1164.all;
+Use ieee.numeric_std.all;
+Use ieee.std_logic_unsigned.all;
+
+entity Registers is
+     Port(ReadReg1: in std_logic_vector(4 downto 0);
+     	  ReadReg2: in std_logic_vector(4 downto 0);
+	  WriteReg: in std_logic_vector(4 downto 0);
+	  WriteData: in std_logic_vector(31 downto 0);
+	  WriteCmd: in std_logic;
+	  ReadData1: out std_logic_vector(31 downto 0);
+	  ReadData2: out std_logic_vector(31 downto 0));
+end entity Registers;
+
+architecture remember of Registers is
+	  component register32
+		port(datain: in std_logic_vector(31 downto 0);
+		     enout32,enout16,enout8: in std_logic;
+		     writein32, writein16, writein8: in std_logic;
+		     dataout: out std_logic_vector(31 downto 0));
+	end component;
+
+	SIGNAL x0out: std_logic_vector(31 downto 0);
+	SIGNAL a0out: std_logic_vector(31 downto 0);
+	SIGNAL a1out: std_logic_vector(31 downto 0);
+	SIGNAL a2out: std_logic_vector(31 downto 0);
+	SIGNAL a3out: std_logic_vector(31 downto 0);
+	SIGNAL a4out: std_logic_vector(31 downto 0);
+	SIGNAL a5out: std_logic_vector(31 downto 0);
+	SIGNAL a6out: std_logic_vector(31 downto 0);
+	SIGNAL a7out: std_logic_vector(31 downto 0);
+	SIGNAL writeSel: std_logic_vector(7 downto 0);
+
+begin
+
+	WITH WriteReg SELECT
+	writeSel <= "10000000" when "01010".
+	"01000000" when "01011",
+	"00100000" when "01100",
+	"00010000" when "01101",
+	"00001000" when "01110",
+	"00000100" when "01111",
+	"00000010" when "10000",
+	"00000001" when "10000",
+	"00000001" when "10001",
+	(others => '0') when others;
+
+
+
+	A0: register32 PORT MAP (WriteData, '0', '1', '1', writeSel(7), '0','0'
+	A1: register32 PORT MAP (WriteData, '0', '1', '1', writeSel(6), '0', '0'
+	A2: register32 PORT MAP (WriteData, '0', '1', '1', writeSel(5), '0', '0'
+	A3: register32 PORT MAP (WriteData, '0', '1', '1', writeSel(4), '0', '0'
+	A4: register32 PORT MAP (WriteData, '0', '1', '1', writeSel(3), '0', '0'
+	A5: register32 PORT MAP (WriteData, '0', '1', '1', writeSel(2), '0', '0'
+	A6: register32 PORT MAP (WriteData, '0', '1', '1', writeSel(1), '0', '0'
+	A7: register32 PORT MAP (WriteData, '0', '1', '1', writeSel(0), '0', '0'
+
+
+	With ReadReg1 Select
+	ReadData1 <= a0out whenn "01010",
+	alout when "01011",
+	a2out when "01100",
+	a3out when "01101",
+	a4out when "01110",
+	a5out when "01111",
+	a6out when "10000",
+	a7out when "10001",
+	(others => '0') when others;
+
+	with ReadReg2 Select
+	ReadData2 <= a0out when "01010",
+	a1out when "01011",
+	a2out when "01100",
+	a3out when "01101",
+	a4out when "01110",
+	a5out when "01111",
+	a6out when "10000",
+	a7out when "10001",
+	(others => '0') when others;
+
+end remember;
+
+end executive;
+--------------------------------------------------------------------------------
